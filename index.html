@@ -1,0 +1,10 @@
+   <!doctype html>
+   <html><head><meta charset="utf-8"><title>Camera test</title></head>
+   <body style="font:16px sans-serif;padding:20px">
+   <button onclick="go()" style="font-size:20px;padding:12px 20px">Start camera</button>
+   <p id="m"></p><video id="v" autoplay playsinline width="320"></video>
+   <script>
+   function go(){navigator.mediaDevices.getUserMedia({video:true})
+   .then(function(s){document.getElementById('v').srcObject=s;document.getElementById('m').textContent='Camera works';})
+   .catch(function(e){document.getElementById('m').textContent='Blocked: '+e.name+' - '+e.message;});}
+   </script></body></html>
