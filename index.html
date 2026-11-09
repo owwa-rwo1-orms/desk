@@ -136,6 +136,8 @@
   .closedp { text-align:center; }
   .closedp b { display:block; font-family:var(--display); font-size:20px; color:var(--navy); margin-bottom:4px; }
   .closedp span { font-size:14px; color:var(--muted); }
+  .holp { background:repeating-linear-gradient(135deg, #E7EAF2 0 8px, #F3F5F9 8px 16px); }
+  .holp b { color:#243A63; }
 
   /* who's on duty */
   /* Satellite desk camera (2026-11-05, mockup v102) */
@@ -247,6 +249,7 @@
 
       <div class="panel camp hide" id="camPanel"></div>
 
+      <div class="panel closedp holp hide" id="holBox"><b id="holName"></b><span id="holKind"></span></div>
       <div class="panel closedp hide" id="closedBox"><b>Desk closed</b><span>It works on weekdays, 6:00 AM to 7:00 PM.</span></div>
 
       <div class="panel" id="findPanel">
@@ -493,6 +496,9 @@
         el(id).classList.toggle('hide', !DESK.openNow);
       });
       el('closedBox').classList.toggle('hide', DESK.openNow);
+      // Holiday today (2026-11-09): named under the clock.
+      el('holBox').classList.toggle('hide', !d.holiday);
+      if (d.holiday) { el('holName').textContent = 'Closed today · ' + d.holiday; el('holKind').textContent = d.holidayKind === 'Suspension' ? 'Work suspended' : (d.holidayKind || 'Regular') + ' holiday'; }
       camPanel_();
       if (!BUSY) renderBoard();
       markStale_();
