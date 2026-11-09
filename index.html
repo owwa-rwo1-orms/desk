@@ -67,7 +67,6 @@
   .tc.is-out::before { background:var(--ink); opacity:.75; }
   .tc.late::before { background:var(--late); opacity:1; }
   .tc.busy { opacity:.6; pointer-events:none; }
-  .tc.found { box-shadow:0 0 0 3px var(--brass), 0 4px 0 -1px var(--ledge); }
   .nm { font-size:18px; font-weight:700; line-height:1.25; padding-right:92px; }
   .tc:not(.late) .nm { padding-right:0; }
   .nm .from { font-size:11.5px; font-weight:700; background:#E3E8F1; color:var(--navy); border-radius:4px; padding:2px 6px; margin-left:6px; vertical-align:2px; letter-spacing:.03em; white-space:nowrap; }
@@ -119,12 +118,6 @@
   .find { display:flex; align-items:center; gap:8px; border:1.5px solid var(--ledge); border-radius:8px; padding:0 10px; background:#fff; }
   .find:focus-within { border-color:var(--navy); }
   .find input { flex:1; min-width:0; border:0; outline:0; font:inherit; font-size:16px; padding:10px 0; background:transparent; }
-  .others { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
-  .others:empty { display:none; }
-  .onote { font-size:13px; color:var(--muted); padding:6px 2px 0; line-height:1.4; }
-  .onote b { color:var(--text); }
-  .onote.bad { color:var(--late); }
-  .onote.searching::before { content:""; display:inline-block; width:11px; height:11px; margin-right:7px; vertical-align:-1px; border:2px solid var(--ledge); border-top-color:var(--navy); border-radius:50%; animation:spin .8s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
   .mini { list-style:none; margin:0; padding:0; }
   .mini li { display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-top:1px solid #EEF0F3; font-size:14px; }
@@ -261,13 +254,6 @@
         <label class="find"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5D6672" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="Surname" aria-label="Find a name" autocomplete="off" oninput="renderBoard()"></label>
       </div>
 
-      <div class="panel" id="otherPanel">
-        <h3 id="otherTitle">From a satellite office?</h3>
-        <p id="otherText"></p>
-        <label class="find"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5D6672" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q2" placeholder="Surname" aria-label="Surname of someone from another office" autocomplete="off" oninput="searchOther()"></label>
-        <div class="others" id="others"></div>
-      </div>
-
       <div class="panel" id="laterPanel">
         <details id="laterBox"><summary id="laterSum">Later today · 0</summary><ul class="mini" id="later"></ul></details>
       </div>
@@ -291,7 +277,7 @@
 <script>
   var KEY_NAME = 'ormsDeskKey', GUARD_NAME = 'ormsDeskGuard';
   var DESK = { office: '', label: '', isGuardDesk: false, openNow: false, camera: false };
-  var BOARD = null, OTHERS = [], SKEW = 0, LAST_OK = 0, BUSY = 0, FRESH = {};
+  var BOARD = null, SKEW = 0, LAST_OK = 0, BUSY = 0, FRESH = {};
 
   // ---- storage (wrapped: private windows can refuse it) ----
   function getKey_() { try { return localStorage.getItem(KEY_NAME); } catch (e) { return null; } }
@@ -467,8 +453,6 @@
     el('hintLeft').textContent = gd ? 'Press OUT at the gate' : 'Press OUT as you leave';
     el('hintRight').textContent = gd ? 'Press IN when they’re back' : 'Press IN when you’re back';
     el('findPanel').classList.toggle('hide', !gd);
-    el('otherTitle').textContent = gd ? 'From a satellite office?' : 'From another office?';
-    el('otherText').textContent = gd ? 'Staff from another office leaving from here. Type their surname.' : 'Visiting ' + DESK.office + ' today? Type your surname to find your card.';
   }
 
   // Shrinks a one-line label until it fits its box (long office names).
@@ -504,7 +488,7 @@
       showBoard_();
       fitLine_(el('faceOffice'), 13, 9);
       fitLine_(el('dutyName'), 18, 12);
-      ['findPanel', 'otherPanel', 'laterPanel', 'backPanel', 'rackLeft', 'rackRight'].forEach(function(id) {
+      ['findPanel', 'laterPanel', 'backPanel', 'rackLeft', 'rackRight'].forEach(function(id) {
         if (id === 'findPanel' && !DESK.isGuardDesk) return;
         el(id).classList.toggle('hide', !DESK.openNow);
       });
@@ -539,7 +523,7 @@
   function card_(p) {
     var isOut = !!(p.outAt || new Date(p.leaveAt).getTime() <= nowMs_());
     var late = isOut ? lateMins_(p) : 0;
-    var h = '<article class="tc' + (isOut ? ' is-out' : '') + (late ? ' late' : '') + (p._found ? ' found' : '') + '" data-id="' + esc(p.obPassId) + '">';
+    var h = '<article class="tc' + (isOut ? ' is-out' : '') + (late ? ' late' : '') + '" data-id="' + esc(p.obPassId) + '">';
     if (late) h += '<span class="flag">' + lateText_(late) + '</span>';
     h += '<div class="nm">' + esc(p.name) + (p.from ? '<span class="from">' + esc(p.from) + '</span>' : '') + '</div>';
     h += '<div class="wh">' + esc(p.destination) + (p.purpose ? ' · ' + esc(p.purpose) : '') + '</div>';
@@ -573,13 +557,6 @@
     document.querySelectorAll('#sBoard .tc').forEach(function(x) { before[x.getAttribute('data-id')] = x.getBoundingClientRect(); });
 
     var leaving = BOARD.leaving.filter(matchQ_), out = BOARD.out.filter(matchQ_);
-    // Someone found under "From another office?" goes on the rack they
-    // belong on, outlined, until the search is cleared.
-    foundOthers_().forEach(function(p) {
-      p._found = true;
-      if (p.outAt || new Date(p.leaveAt).getTime() <= nowMs_()) out.push(p);
-      else if (p.canOut !== false) leaving.push(p);
-    });
     out.sort(function(a, b) { return (lateMins_(b) ? 1 : 0) - (lateMins_(a) ? 1 : 0) || new Date(a.backBy) - new Date(b.backBy); });
 
     var lh = '', done = {};
@@ -608,8 +585,6 @@
     el('backSum').textContent = 'Back today · ' + back.length;
     el('back').innerHTML = back.map(function(p) { return '<li><span>' + esc(p.name) + '</span><span class="tm ink">' + fmtClock(p.outAt).replace(' ', '') + ' – ' + fmtClock(p.inAt).replace(' ', '') + '</span></li>'; }).join('') || '<li class="none">No one yet.</li>';
 
-    renderOthers_();
-
     // Slide each card from where it was to where it is now.
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && Element.prototype.animate) {
       document.querySelectorAll('#sBoard .tc').forEach(function(x) {
@@ -622,51 +597,8 @@
     FRESH = {};
   }
 
-  // ---- someone from another office ----
-  var OTHER_T = null, OTHER_Q = '';
-  function searchOther() {
-    var q = el('q2').value.trim();
-    clearTimeout(OTHER_T);
-    if (q.length < 2) { OTHERS = []; OTHER_Q = ''; renderBoard(); return; }
-    el('others').innerHTML = '<div class="onote searching">Searching…</div>';
-    OTHER_T = setTimeout(function() {
-      OTHER_Q = q;
-      deskCall_('deskSearchOther', { q: q }).then(function(res) {
-        if (q !== OTHER_Q) return;
-        if (res && !res.ok && /^DESK_/.test(res.error || '')) { showGone_(res.error); return; }
-        OTHERS = res && res.ok ? (res.data.results || []) : [];
-        SEARCH_ERR = res && res.ok ? '' : ((res && res.error) || 'Couldn’t search — try again.');
-        renderBoard();
-        var f = document.querySelector('#sBoard .tc.found');
-        if (f && f.scrollIntoView) f.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }).catch(function() { if (q !== OTHER_Q) return; OTHERS = []; SEARCH_ERR = 'Couldn’t search — try again.'; renderBoard(); });
-    }, 350);
-  }
-  function foundOthers_() {
-    if (el('q2').value.trim().length < 2) return [];
-    return OTHERS.filter(function(p) { return !onBoard_(p.obPassId); });
-  }
-  function onBoard_(id) {
-    return BOARD && (BOARD.leaving.concat(BOARD.out)).some(function(p) { return p.obPassId === id; });
-  }
-  var SEARCH_ERR = '';
-  function renderOthers_() {
-    var box = el('others');
-    var q = el('q2').value.trim();
-    if (q.length < 2) { box.innerHTML = ''; return; }
-    if (OTHER_Q !== q) { box.innerHTML = '<div class="onote searching">Searching…</div>'; return; }
-    if (SEARCH_ERR) { box.innerHTML = '<div class="onote bad">' + esc(SEARCH_ERR) + '</div>'; return; }
-    var list = foundOthers_();
-    var nOut = list.filter(function(p) { return p.outAt || new Date(p.leaveAt).getTime() <= nowMs_(); }).length;
-    var notYet = list.filter(function(p) { return !(p.outAt || new Date(p.leaveAt).getTime() <= nowMs_()) && p.canOut === false; });
-    var nLeave = list.length - nOut - notYet.length;
-    var lines = [];
-    if (nOut) lines.push('<b>Found ' + nOut + '</b> — on <b>Out on OB</b>, outlined.');
-    if (nLeave) lines.push('<b>Found ' + nLeave + '</b> — on <b>Leaving</b>, outlined.');
-    notYet.forEach(function(p) { lines.push(esc(p.name) + ' leaves at ' + fmtClock(p.leaveAt) + '. The card shows 5 minutes before.'); });
-    if (!list.length) lines.push(OTHERS.length ? 'Already on the racks.' : 'No approved OB Pass for today under “' + esc(q) + '”.');
-    box.innerHTML = lines.map(function(l) { return '<div class="onote">' + l + '</div>'; }).join('');
-  }
+  // "From another office?" search retired 2026-11-09 (Oliver): the OB Pass
+  // carries its Official Station, so visitors are already on this rack.
 
   // ---- who's on duty (Guard Desk) ----
   function openDuty() {
@@ -689,13 +621,12 @@
 
   // ---- OUT / IN: one press stamps, Undo for a short while ----
   function findItem_(id) {
-    var all = (BOARD ? BOARD.leaving.concat(BOARD.out) : []).concat(OTHERS);
+    var all = BOARD ? BOARD.leaving.concat(BOARD.out) : [];
     return all.filter(function(p) { return p.obPassId === id; })[0];
   }
   function stampLabel_() { var g = getGuard_(); return DESK.isGuardDesk ? (g ? g.name : '') : 'This computer'; }
   function moveOut_(p, at, by) {
     BOARD.leaving = BOARD.leaving.filter(function(x) { return x.obPassId !== p.obPassId; });
-    OTHERS = OTHERS.filter(function(x) { return x.obPassId !== p.obPassId; });
     BOARD.out = BOARD.out.filter(function(x) { return x.obPassId !== p.obPassId; });
     p.outAt = at; p.outBy = by; p.canOut = true;
     BOARD.out.push(p);
@@ -703,7 +634,6 @@
   }
   function moveIn_(p, at) {
     BOARD.out = BOARD.out.filter(function(x) { return x.obPassId !== p.obPassId; });
-    OTHERS = OTHERS.filter(function(x) { return x.obPassId !== p.obPassId; });
     BOARD.back = [{ obPassId: p.obPassId, name: p.name, outAt: p.outAt || p.leaveAt, inAt: at }].concat((BOARD.back || []).filter(function(x) { return x.obPassId !== p.obPassId; }));
   }
 
@@ -725,13 +655,10 @@
     people = ids.map(findItem_).filter(Boolean);
     if (!people.length) return;
     // Snapshot for putting things back if the server says no.
-    var snap = JSON.stringify({ b: BOARD, o: OTHERS });
+    var snap = JSON.stringify({ b: BOARD });
     var at = new Date(nowMs_()), by = stampLabel_();
-    var wasFound = people.some(function(p) { return p._found; });
-    people.forEach(function(p) { delete p._found; if (kind === 'out') moveOut_(p, at, by); else moveIn_(p, at); });
+    people.forEach(function(p) { if (kind === 'out') moveOut_(p, at, by); else moveIn_(p, at); });
     if (kind === 'in') el('backBox').open = true;
-    // Done with the person found from another office: clear the search.
-    if (wasFound) { el('q2').value = ''; OTHERS = []; OTHER_Q = ''; }
     BUSY++;
     renderBoard();
     var who = people.length > 1 ? people.length + ' people' : people[0].name;
@@ -745,7 +672,7 @@
       BUSY--;
       if (!res || !res.ok) {
         if (res && /^DESK_/.test(res.error || '')) { showGone_(res.error); return; }
-        var s = JSON.parse(snap); BOARD = s.b; OTHERS = s.o; hideUndo_();
+        var s = JSON.parse(snap); BOARD = s.b; hideUndo_();
         renderBoard();
         say_((res && res.error) || 'Couldn’t save — try again.', true);
         return;
@@ -755,12 +682,12 @@
         // Some went through, some didn't: show the server's view.
         hideUndo_();
         say_(d.problems.join(' '), true);
-        if (!d.done || !d.done.length) { var s2 = JSON.parse(snap); BOARD = s2.b; OTHERS = s2.o; renderBoard(); }
+        if (!d.done || !d.done.length) { var s2 = JSON.parse(snap); BOARD = s2.b; renderBoard(); }
         refresh();
       }
     }).catch(function() {
       BUSY--;
-      var s = JSON.parse(snap); BOARD = s.b; OTHERS = s.o; hideUndo_();
+      var s = JSON.parse(snap); BOARD = s.b; hideUndo_();
       renderBoard();
       say_('Network error — nothing was saved. Try again.', true);
     });
